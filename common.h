@@ -101,7 +101,7 @@ typedef struct {
     char winner_name[MAX_NICKNAME];
     int winner_score;
     int num_players;
-    PlayerInfo final_ranking[MAX_PLAYERS];  // Ordinati per score
+    PlayerInfo final_ranking[MAX_PLAYERS]; 
 } GameOverMsg;
 
 /* Cella lato server */
