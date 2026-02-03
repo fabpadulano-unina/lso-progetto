@@ -19,6 +19,7 @@ int game_active = 0;
 int connect_to_server(const char* ip, int port);
 void do_register(int sockfd);
 void do_login(int sockfd);
+void show_menu();
 void handle_server_message(int sockfd);
 void display_local_map();
 void display_global_map(GlobalMapMsg* global);
@@ -200,7 +201,7 @@ void do_login(int sockfd) {
         printf("Errore: credenziali errate o già connesso\n\n");
     }
 }
-    
+
 /* ===== GAME LOOP ===== */
 void game_loop(int sockfd) {
     fd_set read_set;
@@ -232,7 +233,7 @@ void game_loop(int sockfd) {
             cmd = getchar();
             
             MoveMsg move;
-            int is_mov = 1; // 
+            int valid_move = 1;
             
             switch(cmd) {
                 case 'w': move.direction = DIR_UP; break;
@@ -241,29 +242,35 @@ void game_loop(int sockfd) {
                 case 'd': move.direction = DIR_RIGHT; break;
                 case 'l':
                     send_simple_message(sockfd, MSG_LIST_PLAYERS);
-                    is_mov = 0;
+                    valid_move = 0;
                     break;
                 case 'm':
                     display_local_map();
-                    is_mov = 0;
+                    valid_move = 0;
                     break;
                 case 'q':
                     send_simple_message(sockfd, MSG_QUIT);
                     running = 0;
-                    is_mov = 0;
+                    valid_move = 0;
                     break;
                 default:
-                    is_mov = 0;
+                    valid_move = 0;
             }
             
-            if(is_mov) {
+            if(valid_move) {
                 send_message(sockfd, MSG_MOVE, &move, sizeof(MoveMsg));
             }
         }
         
         // Messaggi dal server
         if(FD_ISSET(sockfd, &read_set)) {
+            // C'è davvero qualcosa da leggere
             handle_server_message(sockfd);
+            
+            // Se la connessione è stata chiusa, esci
+            if(!game_active) {
+                running = 0;
+            }
         }
     }
     
@@ -279,8 +286,20 @@ void handle_server_message(int sockfd) {
     
     len = recv_message(sockfd, &msg_type, buffer, sizeof(buffer));
     
-    if(len <= 0) {
-        printf("Connessione persa.\n");
+    if(len < 0) {
+        // Errore di lettura
+        if(errno == EAGAIN || errno == EWOULDBLOCK) {
+            // Nessun dato disponibile (non è un errore grave)
+            return;
+        }
+        printf("Errore di connessione.\n");
+        game_active = 0;
+        return;
+    }
+    
+    if(len == 0 && msg_type == 0) {
+        // Connessione chiusa dal server
+        printf("Server disconnesso.\n");
         game_active = 0;
         return;
     }
@@ -441,3 +460,4 @@ void display_global_map(GlobalMapMsg* global) {
     }
     printf("\n");
 }
+
