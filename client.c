@@ -90,35 +90,36 @@ int main(int argc, char* argv[]) {
 
 /* ===== CONNESSIONE AL SERVER ===== */
 int connect_to_server(const char* host, int port) {
-    int sockfd;
-    struct sockaddr_in server_addr;
-    struct hostent *server;
-
-    // Crea socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    struct addrinfo hints, *res;
+    char port_str[16];
+    
+    sprintf(port_str, "%d", port);
+    
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    
+    int err = getaddrinfo(host, port_str, &hints, &res);
+    if (err != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
+        return -1;
+    }
+    
+    int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd < 0) {
+        perror("socket");
+        freeaddrinfo(res);
         return -1;
     }
-
-    // Risolvi l'hostname (nome del container del server)
-    server = gethostbyname(host);
-    if (server == NULL) {
+    
+    if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
+        perror("connect");
         close(sockfd);
+        freeaddrinfo(res);
         return -1;
     }
-
-    // Configura indirizzo server
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
-
-    // Connetti
-    if(connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        close(sockfd);
-        return -1;
-    }
-
+    
+    freeaddrinfo(res);
     return sockfd;
 }
 
