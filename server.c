@@ -176,18 +176,16 @@ void handle_new_connection(int listen_fd, fd_set* master_set, int* max_fd) {
 
 /* ===== GESTIONE MESSAGGI CLIENT ===== */
 void handle_client_message(int client_fd, fd_set* master_set) {
-    int msg_type;
+    int msg_type = 0;
     char buffer[4096];
     int len;
     
-    // Ricevi messaggio
     len = recv_message(client_fd, &msg_type, buffer, sizeof(buffer));
     
-    if(len < 0 || len == 0) {
+    if(len < 0 || (len == 0 && msg_type == 0)) {
         // Connessione chiusa o errore
         fprintf(stderr, "Client %d disconnesso\n", client_fd);
         
-        // Rimuovi giocatore se era in partita
         int player_id = players_find_by_socket(players, client_fd);
         if(player_id >= 0) {
             players_remove(players, player_id);
