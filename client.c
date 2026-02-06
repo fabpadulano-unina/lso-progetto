@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <netdb.h>
 
 /* ===== VARIABILI GLOBALI CLIENT ===== */
 Cell local_map[MAP_SIZE][MAP_SIZE];
@@ -88,32 +89,36 @@ int main(int argc, char* argv[]) {
 }
 
 /* ===== CONNESSIONE AL SERVER ===== */
-int connect_to_server(const char* ip, int port) {
+int connect_to_server(const char* host, int port) {
     int sockfd;
     struct sockaddr_in server_addr;
-    
+    struct hostent *server;
+
     // Crea socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sockfd < 0) {
+    if (sockfd < 0) {
         return -1;
     }
-    
+
+    // Risolvi l'hostname (nome del container del server)
+    server = gethostbyname(host);
+    if (server == NULL) {
+        close(sockfd);
+        return -1;
+    }
+
     // Configura indirizzo server
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
-    
-    if(inet_pton(AF_INET, ip, &server_addr.sin_addr) <= 0) {
-        close(sockfd);
-        return -1;
-    }
-    
+    memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+
     // Connetti
     if(connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         close(sockfd);
         return -1;
     }
-    
+
     return sockfd;
 }
 

@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  server:
+    image: conquista-territorio
+    container_name: ct-server
+    command: ./server
+    ports:
+      - "8888:8888"
+    networks:
+      - ct-net
+
+  client:
+    image: conquista-territorio
+    container_name: ct-client
+    depends_on:
+      - server
+    networks:
+      - ct-net
+    stdin_open: true
+    tty: true
+    command: ./client server 8888
+
+networks:
+  ct-net:
+    driver: bridge
