@@ -142,7 +142,7 @@ int create_listening_socket(int port) {
     }
     
     // Listen
-    if(listen(sockfd, 10) < 0) {
+    if(listen(sockfd, 1000) < 0) {
         close(sockfd);
         return -1;
     }

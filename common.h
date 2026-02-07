@@ -6,7 +6,7 @@
 
 /* ===== COSTANTI ===== */
 #define MAP_SIZE 20
-#define MAX_PLAYERS 10         // Nessun limite a priori, ma usiamo un max pratico
+#define MAX_PLAYERS 1000         // Nessun limite a priori, ma usiamo un max pratico
 #define MAX_NICKNAME 20
 #define MAX_PASSWORD 20
 #define VIEW_RADIUS 3          // Raggio visione per scoprire ostacoli
