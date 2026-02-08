@@ -1,0 +1,12 @@
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y gcc
+
+WORKDIR /app
+
+COPY . .
+
+# Compila SOLO il client
+RUN gcc client.c protocol.c -o client
+
+CMD ["./client", "server", "8888"]
