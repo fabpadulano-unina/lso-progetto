@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
     FD_SET(listen_fd, &master_set);
     max_fd = listen_fd;
     
-    fprintf(stderr, "Server avviato sulla porta %d\n", port);
+
     
     // Loop principale
     while(1) {
@@ -171,7 +171,6 @@ void handle_new_connection(int listen_fd, fd_set* master_set, int* max_fd) {
         *max_fd = new_fd;
     }
     
-    fprintf(stderr, "Nuova connessione: socket %d\n", new_fd);
 }
 
 /* ===== GESTIONE MESSAGGI CLIENT ===== */
@@ -184,7 +183,6 @@ void handle_client_message(int client_fd, fd_set* master_set) {
     
     if(len < 0 || (len == 0 && msg_type == 0)) {
         // Connessione chiusa o errore
-        fprintf(stderr, "Client %d disconnesso\n", client_fd);
         
         int player_id = players_find_by_socket(players, client_fd);
         if(player_id >= 0) {
@@ -239,7 +237,6 @@ void handle_register(int client_fd, AuthMsg* auth) {
     if(result == 0) {
         // Registrazione OK
         send_simple_message(client_fd, MSG_OK);
-        fprintf(stderr, "Registrato: %s\n", auth->nickname);
     } else {
         // Nickname già esistente o errore
         send_simple_message(client_fd, MSG_ERROR);
@@ -294,8 +291,7 @@ void handle_login(int client_fd, AuthMsg* auth) {
         last_update_time = time(NULL);
     }
     
-    fprintf(stderr, "Login: %s (ID %d) in (%d,%d)\n", 
-            auth->nickname, player_id, start_pos.x, start_pos.y);
+   
 }
 
 /* ===== GESTIONE MOVIMENTO ===== */
@@ -522,8 +518,7 @@ void check_game_end() {
             }
         }
         
-        fprintf(stderr, "Partita terminata! Vincitore: %s (%d celle)\n", 
-                game_over.winner_name, game_over.winner_score);
+        
         
         // Resetta gioco
         game_started = 0;

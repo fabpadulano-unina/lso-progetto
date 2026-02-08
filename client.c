@@ -371,17 +371,30 @@ void handle_server_message(int sockfd) {
             {
                 GameOverMsg* game_over = (GameOverMsg*)buffer;
                 int i;
-                printf("\n=== PARTITA TERMINATA ===\n");
-                printf("Vincitore: %s con %d celle!\n\n",
-                       game_over->winner_name, game_over->winner_score);
-                printf("Classifica:\n");
+                
+                // Pulisce un po' lo schermo per dare enfasi
+                printf("\n\n");
+                printf("**********************************\n");
+                printf("* PARTITA TERMINATA        *\n");
+                printf("**********************************\n\n");
+                
+                if (game_over->winner_id != -1) {
+                     printf("   VINCITORE: %s \n", game_over->winner_name);
+                     printf("   PUNTEGGIO: %d celle conquistate\n", game_over->winner_score);
+                } else {
+                     printf("   NESSUN VINCITORE (Pareggio o nessuno ha giocato)\n");
+                }
+                
+                printf("\n--- CLASSIFICA FINALE ---\n");
                 for(i = 0; i < game_over->num_players; i++) {
-                    printf("%d. %s - %d celle\n",
+                    printf("%d. %-15s [Celle: %d]\n", // %-15s allinea i nomi
                            i+1,
                            game_over->final_ranking[i].nickname,
                            game_over->final_ranking[i].cells_owned);
                 }
-                printf("\n");
+                printf("-------------------------\n\n");
+                
+                printf("Premi Invio per tornare al menu...");
                 game_active = 0;
             }
             break;
