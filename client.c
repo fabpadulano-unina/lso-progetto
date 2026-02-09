@@ -11,12 +11,11 @@
 #include <errno.h>
 #include <netdb.h>
 
-/* ===== VARIABILI GLOBALI CLIENT ===== */
+
 Cell local_map[MAP_SIZE][MAP_SIZE];
 int my_x, my_y;
 int game_active = 0;
 
-/* ===== PROTOTIPI FUNZIONI ===== */
 int connect_to_server(const char* ip, int port);
 void do_register(int sockfd);
 void do_login(int sockfd);
@@ -50,14 +49,13 @@ ssize_t read_line(int fd, char *buffer, size_t n) {
     return tot_read;
 }
 
-/* ===== MAIN ===== */
 int main(int argc, char* argv[]) {
     int sockfd;
     char* server_ip;
     int server_port;
     int choice;
     
-    // Verifica argomenti riga di comando
+    //vVerifica argomenti riga di comando
     if(argc != 3) {
         printf("Uso: %s <ip_server> <porta>\n", argv[0]);
         printf("Esempio: %s 127.0.0.1 8888\n", argv[0]);
@@ -67,7 +65,7 @@ int main(int argc, char* argv[]) {
     server_ip = argv[1];
     server_port = atoi(argv[2]);
     
-    // Connessione al server
+   
     sockfd = connect_to_server(server_ip, server_port);
     if(sockfd < 0) {
         printf("Errore: impossibile connettersi al server\n");
@@ -76,7 +74,7 @@ int main(int argc, char* argv[]) {
     
     printf("Connesso al server %s:%d\n\n", server_ip, server_port);
     
-    // Menu iniziale
+    // menu
     while(!game_active) {
         printf("=== MENU ===\n");
         printf("1. Registrazione\n");
