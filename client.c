@@ -323,7 +323,7 @@ void game_loop(int sockfd) {
 /* ===== GESTIONE MESSAGGI SERVER ===== */
 void handle_server_message(int sockfd) {
     int msg_type;
-    char buffer[65536];
+    char buffer[100000];
     int len;
     
     len = recv_message(sockfd, &msg_type, buffer, sizeof(buffer));
