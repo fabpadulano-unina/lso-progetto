@@ -26,6 +26,30 @@ void display_local_map();
 void display_global_map(GlobalMapMsg* global);
 void game_loop(int sockfd);
 
+ssize_t read_line(int fd, char *buffer, size_t n) {
+    ssize_t num_read;
+    size_t tot_read = 0;
+    char ch;
+
+    if (n <= 0 || buffer == NULL) return -1;
+
+    while (tot_read < n - 1) {
+        num_read = read(fd, &ch, 1); 
+        
+        if (num_read == -1) {
+            return -1; 
+        } else if (num_read == 0) {
+            break; // EOF 
+        } else {
+            buffer[tot_read++] = ch;
+            if (ch == '\n') break; 
+        }
+    }
+
+    buffer[tot_read] = '\0'; 
+    return tot_read;
+}
+
 /* ===== MAIN ===== */
 int main(int argc, char* argv[]) {
     int sockfd;
@@ -92,6 +116,7 @@ int main(int argc, char* argv[]) {
 int connect_to_server(const char* host, int port) {
     struct addrinfo hints, *res;
     char port_str[16];
+    char err_buff[256]; 
     
     sprintf(port_str, "%d", port);
     
@@ -101,13 +126,14 @@ int connect_to_server(const char* host, int port) {
     
     int err = getaddrinfo(host, port_str, &hints, &res);
     if (err != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
+        int n = sprintf(err_buff, "getaddrinfo: %s\n", gai_strerror(err));
+        write(2, err_buff, n);
         return -1;
     }
     
     int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd < 0) {
-        perror("socket");
+        perror("socket"); 
         freeaddrinfo(res);
         return -1;
     }
@@ -131,11 +157,15 @@ void do_register(int sockfd) {
     
     printf("\n=== REGISTRAZIONE ===\n");
     printf("Nickname: ");
-    fgets(auth.nickname, MAX_NICKNAME, stdin);
-    auth.nickname[strcspn(auth.nickname, "\n")] = 0; // Rimuovi \n
+    fflush(stdout); // Assicura che la scritta appaia prima della read
+    
+    read_line(STDIN_FILENO, auth.nickname, MAX_NICKNAME);
+    auth.nickname[strcspn(auth.nickname, "\n")] = 0; 
     
     printf("Password: ");
-    fgets(auth.password, MAX_PASSWORD, stdin);
+    fflush(stdout);
+    
+    read_line(STDIN_FILENO, auth.password, MAX_PASSWORD);
     auth.password[strcspn(auth.password, "\n")] = 0;
     
     // Invia richiesta registrazione
@@ -160,11 +190,15 @@ void do_login(int sockfd) {
     
     printf("\n=== LOGIN ===\n");
     printf("Nickname: ");
-    fgets(auth.nickname, MAX_NICKNAME, stdin);
+    fflush(stdout);
+    
+    read_line(STDIN_FILENO, auth.nickname, MAX_NICKNAME);
     auth.nickname[strcspn(auth.nickname, "\n")] = 0;
     
     printf("Password: ");
-    fgets(auth.password, MAX_PASSWORD, stdin);
+    fflush(stdout);
+    
+    read_line(STDIN_FILENO, auth.password, MAX_PASSWORD);
     auth.password[strcspn(auth.password, "\n")] = 0;
     
     // Invia richiesta login
@@ -236,35 +270,37 @@ void game_loop(int sockfd) {
         
         // Input da tastiera
         if(FD_ISSET(STDIN_FILENO, &read_set)) {
-            cmd = getchar();
+            int n = read(STDIN_FILENO, &cmd, 1);
             
-            MoveMsg move;
-            int valid_move = 1;
-            
-            switch(cmd) {
-                case 'w': move.direction = DIR_UP; break;
-                case 's': move.direction = DIR_DOWN; break;
-                case 'a': move.direction = DIR_LEFT; break;
-                case 'd': move.direction = DIR_RIGHT; break;
-                case 'l':
-                    send_simple_message(sockfd, MSG_LIST_PLAYERS);
-                    valid_move = 0;
-                    break;
-                case 'm':
-                    display_local_map();
-                    valid_move = 0;
-                    break;
-                case 'q':
-                    send_simple_message(sockfd, MSG_QUIT);
-                    running = 0;
-                    valid_move = 0;
-                    break;
-                default:
-                    valid_move = 0;
-            }
-            
-            if(valid_move) {
-                send_message(sockfd, MSG_MOVE, &move, sizeof(MoveMsg));
+            if (n > 0) {
+                MoveMsg move;
+                int valid_move = 1;
+                
+                switch(cmd) {
+                    case 'w': move.direction = DIR_UP; break;
+                    case 's': move.direction = DIR_DOWN; break;
+                    case 'a': move.direction = DIR_LEFT; break;
+                    case 'd': move.direction = DIR_RIGHT; break;
+                    case 'l':
+                        send_simple_message(sockfd, MSG_LIST_PLAYERS);
+                        valid_move = 0;
+                        break;
+                    case 'm':
+                        display_local_map();
+                        valid_move = 0;
+                        break;
+                    case 'q':
+                        send_simple_message(sockfd, MSG_QUIT);
+                        running = 0;
+                        valid_move = 0;
+                        break;
+                    default:
+                        valid_move = 0;
+                }
+                
+                if(valid_move) {
+                    send_message(sockfd, MSG_MOVE, &move, sizeof(MoveMsg));
+                }
             }
         }
         

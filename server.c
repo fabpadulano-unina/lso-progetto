@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <errno.h>
+#include <unistd.h> 
 
 /* ===== VARIABILI GLOBALI ===== */
 Cell game_map[MAP_SIZE][MAP_SIZE];
@@ -51,7 +52,8 @@ int main(int argc, char* argv[]) {
     // Crea socket in ascolto
     listen_fd = create_listening_socket(port);
     if(listen_fd < 0) {
-        fprintf(stderr, "Errore creazione socket\n");
+        char *msg = "Errore creazione socket\n";
+        write(2, msg, strlen(msg));
         exit(1);
     }
     
@@ -74,7 +76,8 @@ int main(int argc, char* argv[]) {
         
         if(activity < 0) {
             if(errno == EINTR) continue;
-            fprintf(stderr, "Errore select\n");
+            char *msg = "Errore select\n";
+            write(2, msg, strlen(msg));
             break;
         }
         
@@ -183,7 +186,6 @@ void handle_client_message(int client_fd, fd_set* master_set) {
     
     if(len < 0 || (len == 0 && msg_type == 0)) {
         // Connessione chiusa o errore
-        
         int player_id = players_find_by_socket(players, client_fd);
         if(player_id >= 0) {
             players_remove(players, player_id);
@@ -219,14 +221,17 @@ void handle_client_message(int client_fd, fd_set* master_set) {
                 if(player_id >= 0) {
                     players_remove(players, player_id);
                 }
-                close(client_fd);
+                close(client_fd); 
                 FD_CLR(client_fd, master_set);
             }
             break;
             
-        default:
-            fprintf(stderr, "Messaggio sconosciuto: %d\n", msg_type);
+        default: { // le parentesi graffe sono per limitare la scope di err_buff
+            char err_buff[64];
+            int n = sprintf(err_buff, "Messaggio sconosciuto: %d\n", msg_type);
+            write(2, err_buff, n);
             break;
+        }
     }
 }
 

@@ -1,72 +1,107 @@
 #include "player.h"
-#include <stdio.h>
+#include <stdio.h>  
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h> 
+#include <fcntl.h> 
+
+/* Legge dal file descriptor fd finché non trova \n o finisce il buffer.
+   Restituisce il numero di byte letti. */
+ssize_t read_line(int fd, char *buffer, size_t n) {
+    ssize_t num_read;
+    size_t tot_read = 0;
+    char ch;
+
+    if (n <= 0 || buffer == NULL) return -1;
+
+    while (tot_read < n - 1) {
+        num_read = read(fd, &ch, 1); 
+        
+        if (num_read == -1) {
+            return -1; 
+        } else if (num_read == 0) {
+            break; // EOF 
+        } else {
+            buffer[tot_read++] = ch;
+            if (ch == '\n') break; 
+        }
+    }
+
+    buffer[tot_read] = '\0'; 
+    return tot_read;
+}
 
 /* ===== FUNZIONI FILE UTENTI ===== */
 
 /* Controlla se un nickname esiste nel file */
 int player_exists(const char* nickname) {
-    FILE* f;
+    int fd; 
     char line[128];
     char* nick;
     
-    f = fopen(USERS_FILE, "r");
-    if(f == NULL) {
-        return 0; // File non esiste, nessun utente
+    fd = open(USERS_FILE, O_RDONLY);
+    if(fd < 0) {
+        return 0; // File non esiste o errore, nessun utente
     }
     
-    // Leggi ogni riga del file
-    while(fgets(line, sizeof(line), f) != NULL) {
+    // read_line restituisce 0 se è EOF
+    while(read_line(fd, line, sizeof(line)) > 0) {
         // Estrai il nickname (tutto prima dei ':')
         nick = strtok(line, ":");
         
         if(nick != NULL && strcmp(nick, nickname) == 0) {
-            fclose(f);
+            close(fd);
             return 1; // Trovato!
         }
     }
     
-    fclose(f);
+    close(fd);
     return 0; // Non trovato
 }
 
 /* Registra un nuovo utente */
 int player_register(const char* nickname, const char* password) {
-    FILE* f;
-    
+    int fd;
+    char buffer[256];
+    int len;
+
     // Controlla se esiste già
     if(player_exists(nickname)) {
         return -1; // Nickname già usato
     }
     
-    // Apri file in append
-    f = fopen(USERS_FILE, "a");
-    if(f == NULL) {
+    // O_WRONLY: Scrittura
+    // O_CREAT: Crea se non esiste
+    // O_APPEND: Scrivi alla fine del file
+    // 0644: Permessi rw-r--r--
+    fd = open(USERS_FILE, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if(fd < 0) {
         return -2; // Errore apertura file
     }
     
-    // Scrivi: nickname:password\n
-    fprintf(f, "%s:%s\n", nickname, password);
-    fclose(f);
+    len = sprintf(buffer, "%s:%s\n", nickname, password);
+    
+    write(fd, buffer, len);
+    
+    close(fd);
     
     return 0; // OK
 }
 
 /* Autentica un utente */
 int player_authenticate(const char* nickname, const char* password) {
-    FILE* f;
+    int fd;
     char line[128];
     char* nick;
     char* pass;
     
-    f = fopen(USERS_FILE, "r");
-    if(f == NULL) {
+    fd = open(USERS_FILE, O_RDONLY);
+    if(fd < 0) {
         return 0; // File non esiste, nessun utente
     }
     
     // Leggi ogni riga
-    while(fgets(line, sizeof(line), f) != NULL) {
+    while(read_line(fd, line, sizeof(line)) > 0) {
         // Estrai nickname (prima parte)
         nick = strtok(line, ":");
         // Estrai password (seconda parte)
@@ -74,7 +109,7 @@ int player_authenticate(const char* nickname, const char* password) {
         
         // Controlla se il nickname corrisponde
         if(nick != NULL && strcmp(nick, nickname) == 0) {
-            fclose(f);
+            close(fd);
             
             // Controlla password
             if(pass != NULL && strcmp(pass, password) == 0) {
@@ -85,7 +120,7 @@ int player_authenticate(const char* nickname, const char* password) {
         }
     }
     
-    fclose(f);
+    close(fd);
     return 0; // Nickname non trovato
 }
 
