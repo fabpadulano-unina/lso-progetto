@@ -6,10 +6,11 @@ WORKDIR /app
 
 COPY . .
 
-# Compila SOLO il server
 RUN gcc server.c protocol.c map.c player.c -o server
+
+# la flag '-p' serve per far non dare errore se la cartella c'è già.
+RUN mkdir -p data 
 
 EXPOSE 8888
 
-# Comando di avvio del server
 CMD ["./server"]

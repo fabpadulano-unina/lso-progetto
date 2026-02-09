@@ -8,6 +8,8 @@ services:
     container_name: ct-server
     ports:
       - "8888:8888"
+    volumes:
+      - data:/app/data
     networks:
       - ct-net
 
@@ -24,3 +26,6 @@ services:
 networks:
   ct-net:
     driver: bridge
+
+volumes:
+  data:

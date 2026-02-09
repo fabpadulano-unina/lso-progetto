@@ -6,6 +6,7 @@ COMMON_OBJ = protocol.o map.o player.o
 all: server client
 
 server: server.o $(COMMON_OBJ)
+	mkdir -p data
 	$(CC) $(CFLAGS) server.o $(COMMON_OBJ) -o server
 
 server.o: server.c common.h protocol.h map.h player.h

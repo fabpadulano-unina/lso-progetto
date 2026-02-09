@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#define USERS_FILE "users.txt"
+#define USERS_FILE "data/users.txt"
 
 /* ===== GESTIONE CREDENZIALI (FILE) ===== */
 
