@@ -433,7 +433,6 @@ void send_global_update() {
         }
     }
     
-    // Invia a tutti i giocatori attivi
     for(i = 0; i < MAX_PLAYERS; i++) {
         if(players[i].is_playing) {
             send_message(players[i].socket_fd, MSG_GLOBAL_MAP, 
@@ -442,13 +441,13 @@ void send_global_update() {
     }
 }
 
-/* ===== CONTROLLO FINE PARTITA ===== */
 void check_game_end() {
     time_t now = time(NULL);
     int elapsed = now - game_start_time;
     
     if(elapsed >= GAME_DURATION) {
-        // Tempo scaduto! Fine partita
+        // Tempo scaduto
+
         GameOverMsg game_over;
         int i, count = 0;
         int max_score = -1;
@@ -482,7 +481,6 @@ void check_game_end() {
         for(j = 0; j < count - 1; j++) {
             for(k = j + 1; k < count; k++) {
                 if(game_over.final_ranking[k].cells_owned > game_over.final_ranking[j].cells_owned) {
-                    // Swap
                     PlayerInfo temp = game_over.final_ranking[j];
                     game_over.final_ranking[j] = game_over.final_ranking[k];
                     game_over.final_ranking[k] = temp;
