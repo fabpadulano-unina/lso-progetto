@@ -417,14 +417,13 @@ void handle_server_message(int sockfd) {
                 
                 printf("\n--- CLASSIFICA FINALE ---\n");
                 for(i = 0; i < game_over->num_players; i++) {
-                    printf("%d. %-15s [Celle: %d]\n", // %-15s allinea i nomi
-                           i+1,
-                           game_over->final_ranking[i].nickname,
-                           game_over->final_ranking[i].cells_owned);
+                    printf("%d) %s: %d celle\n", 
+                            i + 1, 
+                            game_over->final_ranking[i].nickname, 
+                            game_over->final_ranking[i].cells_owned);
                 }
-                printf("-------------------------\n\n");
-                
-                printf("Premi Invio per tornare al menu...");
+                printf("-------------------------\n");
+                printf("\nPartita terminata. Premi Invio per uscire...");
                 game_active = 0;
             }
             break;

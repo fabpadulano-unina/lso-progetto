@@ -4,7 +4,7 @@
 #include <string.h>
 #include <errno.h>
 
-/* Legge esattamente n bytes da un socket */
+/* legge esattamente n bytes da un socket */
 int recv_all(int sockfd, void* buffer, int n) {
     int received = 0;
     char* p = (char*)buffer;
@@ -19,25 +19,25 @@ int recv_all(int sockfd, void* buffer, int n) {
         }
         
         if(r == 0) {
-            return received; // EOF: peer ha chiuso
+            return received; // EOF, peer ha chiuso
         }
         
         // r < 0: errore
         if(errno == EINTR) {
-            continue; // Interruzione da segnale: riprova
+            continue; // interruzione da segnale, riprova
         }
         
         if(errno == EAGAIN || errno == EWOULDBLOCK) {
-            return -2; // Timeout / would-block
+            return -2; 
         }
         
-        return -1; // Altro errore
+        return -1; // altro errore
     }
     
-    return received; // == n
+    return received; 
 }
 
-/* Invia esattamente n bytes su un socket */
+/* invia esattamente n bytes su un socket */
 int send_all(int sockfd, void* buffer, int n) {
     int sent = 0;
     char* p = (char*)buffer;
@@ -52,37 +52,37 @@ int send_all(int sockfd, void* buffer, int n) {
         }
         
         if(w == 0) {
-            return -1; // Raro per send()
+            return -1; 
         }
         
-        // w < 0: errore
+        // w < 0 errore
         if(errno == EINTR) {
-            continue; // Interruzione da segnale: riprova
+            continue; // interruzione da segnale, riprova
         }
         
         if(errno == EAGAIN || errno == EWOULDBLOCK) {
-            return -2; // Non può scrivere ora (timeout / non-blocking)
+            return -2; // non può scrivere ora (timeout / non-blocking)
         }
         
-        return -1; // Altro errore
+        return -1; // altro errore
     }
     
-    return sent; // == n
+    return sent; 
 }
 
-/* Invia un messaggio completo (header + dati) */
+/* invia un messaggio completo (header + dati) */
 int send_message(int sockfd, int msg_type, void* data, int data_len) {
     MsgHeader header;
     
     header.type = msg_type;
     header.length = data_len;
     
-    // Invia header
+    // invia header
     if(send_all(sockfd, &header, sizeof(MsgHeader)) != sizeof(MsgHeader)) {
         return -1;
     }
     
-    // Invia dati (se presenti)
+    // invia dati (se presenti)
     if(data_len > 0 && data != NULL) {
         if(send_all(sockfd, data, data_len) != data_len) {
             return -1;
@@ -92,12 +92,12 @@ int send_message(int sockfd, int msg_type, void* data, int data_len) {
     return 0;
 }
 
-/* Riceve un messaggio completo (header + dati) */
+/* riceve un messaggio completo (header + dati) */
 int recv_message(int sockfd, int* msg_type, void* buffer, int buffer_size) {
     MsgHeader header;
     int result;
     
-    // Ricevi header
+    // ricevi header
     result = recv_all(sockfd, &header, sizeof(MsgHeader));
     
     if(result <= 0) {
@@ -106,17 +106,16 @@ int recv_message(int sockfd, int* msg_type, void* buffer, int buffer_size) {
     
     *msg_type = header.type;
     
-    // Se non ci sono dati, ritorna 0
+    // se non ci sono dati, ritorna 0
     if(header.length == 0) {
         return 0;
     }
     
-    // Controlla che il buffer sia abbastanza grande
+    // controlla che il buffer sia abbastanza grande
     if(header.length > buffer_size) {
         return -1;
     }
     
-    // Ricevi dati
     result = recv_all(sockfd, buffer, header.length);
     
     if(result <= 0) {
@@ -126,7 +125,7 @@ int recv_message(int sockfd, int* msg_type, void* buffer, int buffer_size) {
     return header.length;
 }
 
-/* Invia un messaggio semplice senza dati */
+/* invia un messaggio semplice senza dati */
 int send_simple_message(int sockfd, int msg_type) {
     return send_message(sockfd, msg_type, NULL, 0);
 }

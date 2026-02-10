@@ -13,14 +13,14 @@
 #include <errno.h>
 #include <unistd.h> 
 
-/* ===== VARIABILI GLOBALI ===== */
+/* variabili globali */
 Cell game_map[MAP_SIZE][MAP_SIZE];
 Player players[MAX_PLAYERS];
 time_t game_start_time;
 time_t last_update_time;
 int game_started = 0;
 
-/* ===== PROTOTIPI FUNZIONI ===== */
+/* prototipi */
 int create_listening_socket(int port);
 void handle_new_connection(int listen_fd, fd_set* master_set, int* max_fd);
 void handle_client_message(int client_fd, fd_set* master_set);
@@ -32,7 +32,7 @@ void handle_list_players(int client_fd);
 void send_local_map(int client_fd, int player_id);
 void check_game_end();
 
-/* ===== MAIN ===== */
+
 int main(int argc, char* argv[]) {
     int listen_fd;
     fd_set master_set, read_set;
@@ -40,16 +40,16 @@ int main(int argc, char* argv[]) {
     struct timeval timeout;
     int port = SERVER_PORT;
     
-    // Inizializza random seed
+    // inizializza random seed
     srand(time(NULL));
     
-    // Inizializza mappa
+    // inizializza mappa
     map_init(game_map, 20); // 20% muri
     
     // Inizializza giocatori
     players_init(players);
     
-    // Crea socket in ascolto
+    // crea socket in ascolto
     listen_fd = create_listening_socket(port);
     if(listen_fd < 0) {
         char *msg = "Errore creazione socket\n";
@@ -57,18 +57,18 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     
-    // Inizializza set di socket
+    // inizializza set 
     FD_ZERO(&master_set);
     FD_SET(listen_fd, &master_set);
     max_fd = listen_fd;
     
 
     
-    // Loop principale
+
     while(1) {
         read_set = master_set;
         
-        // Timeout per select: 1 secondo
+        // timeout per select di 1 secondo
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         
@@ -81,31 +81,30 @@ int main(int argc, char* argv[]) {
             break;
         }
         
-        // Controlla tutti i socket
+        // controlla tutti i socket
         int i;
         for(i = 0; i <= max_fd; i++) {
             if(FD_ISSET(i, &read_set)) {
                 if(i == listen_fd) {
-                    // Nuova connessione
+                    // nuova connessione
                     handle_new_connection(listen_fd, &master_set, &max_fd);
                 } else {
-                    // Messaggio da client
+                    // messaggio da client
                     handle_client_message(i, &master_set);
                 }
             }
         }
         
-        // Aggiornamenti periodici
+        // aggiornamenti periodici
         if(game_started) {
             time_t now = time(NULL);
             
-            // Invia update globale ogni UPDATE_INTERVAL secondi
+            // invia update globale ogni UPDATE_INTERVAL secondi
             if(now - last_update_time >= UPDATE_INTERVAL) {
                 send_global_update();
                 last_update_time = now;
             }
-            
-            // Controlla fine partita
+        
             check_game_end();
         }
     }
@@ -114,37 +113,32 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-/* ===== CREAZIONE SOCKET ===== */
 int create_listening_socket(int port) {
     int sockfd;
     struct sockaddr_in addr;
     int opt = 1;
     
-    // Crea socket
+    // crea socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0) {
         return -1;
     }
     
-    // Opzioni socket
     if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         close(sockfd);
         return -1;
     }
     
-    // Configura indirizzo
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
     
-    // Bind
     if(bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         close(sockfd);
         return -1;
     }
     
-    // Listen
     if(listen(sockfd, 1000) < 0) {
         close(sockfd);
         return -1;
@@ -153,30 +147,26 @@ int create_listening_socket(int port) {
     return sockfd;
 }
 
-/* ===== GESTIONE NUOVE CONNESSIONI ===== */
 void handle_new_connection(int listen_fd, fd_set* master_set, int* max_fd) {
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
     int new_fd;
     
-    // Accetta nuova connessione
     new_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &addr_len);
     
     if(new_fd < 0) {
-        return; // Errore accept, ignora
+        return; // errore accept, ignora
     }
-    
-    // Aggiungi al master set
+  
     FD_SET(new_fd, master_set);
-    
-    // Aggiorna max_fd se necessario
+
     if(new_fd > *max_fd) {
         *max_fd = new_fd;
     }
     
 }
 
-/* ===== GESTIONE MESSAGGI CLIENT ===== */
+
 void handle_client_message(int client_fd, fd_set* master_set) {
     int msg_type = 0;
     char buffer[4096];
@@ -185,7 +175,7 @@ void handle_client_message(int client_fd, fd_set* master_set) {
     len = recv_message(client_fd, &msg_type, buffer, sizeof(buffer));
     
     if(len < 0 || (len == 0 && msg_type == 0)) {
-        // Connessione chiusa o errore
+        // connessione chiusa o errore
         int player_id = players_find_by_socket(players, client_fd);
         if(player_id >= 0) {
             players_remove(players, player_id);
@@ -196,7 +186,7 @@ void handle_client_message(int client_fd, fd_set* master_set) {
         return;
     }
     
-    // Gestisci in base al tipo di messaggio
+    // gestisci in base al tipo di messaggio
     switch(msg_type) {
         case MSG_REGISTER:
             handle_register(client_fd, (AuthMsg*)buffer);
@@ -215,7 +205,7 @@ void handle_client_message(int client_fd, fd_set* master_set) {
             break;
             
         case MSG_QUIT:
-            // Client vuole disconnettersi
+            // client vuole disconnettersi
             {
                 int player_id = players_find_by_socket(players, client_fd);
                 if(player_id >= 0) {
@@ -235,61 +225,61 @@ void handle_client_message(int client_fd, fd_set* master_set) {
     }
 }
 
-/* ===== GESTIONE REGISTRAZIONE ===== */
+
 void handle_register(int client_fd, AuthMsg* auth) {
     int result = player_register(auth->nickname, auth->password);
     
     if(result == 0) {
-        // Registrazione OK
+        // registrazione OK
         send_simple_message(client_fd, MSG_OK);
     } else {
-        // Nickname già esistente o errore
+        // nickname già esistente o errore
         send_simple_message(client_fd, MSG_ERROR);
     }
 }
 
-/* ===== GESTIONE LOGIN ===== */
+
 void handle_login(int client_fd, AuthMsg* auth) {
     int result = player_authenticate(auth->nickname, auth->password);
     
     if(result != 1) {
-        // Credenziali errate
+        // credenziali errate
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
     
-    // Controlla se già in partita
+    // controllo se già in partita
     if(players_find_by_nickname(players, auth->nickname) >= 0) {
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
     
-    // Trova posizione iniziale casuale
+    // trova posizione iniziale casuale
     Position start_pos = map_find_random_free_position(game_map);
     
-    // Aggiungi giocatore
+    // lo aggiungo in partita
     int player_id = players_add(players, auth->nickname, client_fd, start_pos);
     
     if(player_id < 0) {
-        // Partita piena
+        // partita piena
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
     
-    // Conquista cella iniziale
+    // conquista cella iniziale
     map_set_owner(game_map, start_pos.x, start_pos.y, player_id);
     
-    // Rivela muri attorno alla posizione iniziale
+    // rivela muri attorno alla posizione iniziale
     map_reveal_walls(game_map, players[player_id].walls_discovered, 
                      start_pos.x, start_pos.y);
     
-    // Invia OK
+    // invia OK
     send_simple_message(client_fd, MSG_OK);
     
-    // Invia mappa locale
+    // invia mappa locale
     send_local_map(client_fd, player_id);
     
-    // Avvia gioco se è il primo giocatore
+    // avvia gioco se è il primo giocatore
     if(!game_started) {
         game_started = 1;
         game_start_time = time(NULL);
@@ -299,7 +289,7 @@ void handle_login(int client_fd, AuthMsg* auth) {
    
 }
 
-/* ===== GESTIONE MOVIMENTO ===== */
+/* gestione movimento */
 void handle_move(int client_fd, MoveMsg* move) {
     int player_id = players_find_by_socket(players, client_fd);
     
@@ -308,13 +298,13 @@ void handle_move(int client_fd, MoveMsg* move) {
         return;
     }
     
-    // Calcola nuova posizione
+    // calcola nuova posizione
     Position old_pos = players[player_id].pos;
     Position new_pos = old_pos;
     
     switch(move->direction) {
-        case DIR_UP:    new_pos.y++; break;  // y aumenta andando su
-        case DIR_DOWN:  new_pos.y--; break;  // y diminuisce andando giù
+        case DIR_UP:    new_pos.y++; break; 
+        case DIR_DOWN:  new_pos.y--; break;  
         case DIR_LEFT:  new_pos.x--; break;
         case DIR_RIGHT: new_pos.x++; break;
         default:
@@ -322,32 +312,32 @@ void handle_move(int client_fd, MoveMsg* move) {
             return;
     }
     
-    // Verifica che la nuova posizione sia valida e libera
+    // verifica che la nuova posizione sia valida e libera
     if(!map_is_free(game_map, new_pos.x, new_pos.y)) {
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
     
-    // Aggiorna posizione giocatore
+    // aggiorna posizione giocatore
     players[player_id].pos = new_pos;
     
-    // Conquista la nuova cella
+    // conquista la nuova cella
     map_set_owner(game_map, new_pos.x, new_pos.y, player_id);
     
-    // Rivela muri attorno alla nuova posizione
+    // rivela muri attorno alla nuova posizione
     map_reveal_walls(game_map, players[player_id].walls_discovered, 
                      new_pos.x, new_pos.y);
     
-    // Aggiorna punteggio
+    // aggiorna punteggio
     int score = map_count_cells_owned(game_map, player_id);
     players_update_score(players, player_id, score);
     
-    // Invia OK e mappa locale aggiornata
+    // invia OK e mappa locale aggiornata
     send_simple_message(client_fd, MSG_OK);
     send_local_map(client_fd, player_id);
 }
 
-/* ===== INVIO MAPPA LOCALE ===== */
+/* invio mappa locale */
 void send_local_map(int client_fd, int player_id) {
     LocalMapMsg local_msg;
     Cell cells[(2*VIEW_RADIUS+1) * (2*VIEW_RADIUS+1)];
@@ -356,32 +346,31 @@ void send_local_map(int client_fd, int player_id) {
     
     Position pos = players[player_id].pos;
     
-    // Prepara header
+    // header
     local_msg.your_x = pos.x;
     local_msg.your_y = pos.y;
     local_msg.view_size = 2 * VIEW_RADIUS + 1;
     
-    // Raccoglie celle nella finestra VIEW_RADIUS
+    // raccoglie le celle nella finestra view_radius
     for(i = pos.x - VIEW_RADIUS; i <= pos.x + VIEW_RADIUS; i++) {
         for(j = pos.y - VIEW_RADIUS; j <= pos.y + VIEW_RADIUS; j++) {
             Cell cell;
             
-            // Se fuori mappa
+            // se fuori mappa
             if(i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
-                cell.type = CELL_FREE;  // Tratta come libera (non esiste)
+                cell.type = CELL_FREE;  // tratta come libera
                 cell.owner_id = -1;
             } else {
-                // Controlla se è un muro
                 if(game_map[i][j].type == CELL_WALL) {
-                    // È un muro: mostralo SOLO se scoperto
+                    // mostralo SOLO se scoperto
                     if(players[player_id].walls_discovered[i][j]) {
-                        cell.type = CELL_WALL;  // Scoperto: mostra il muro
+                        cell.type = CELL_WALL;  // mostra il muro
                     } else {
-                        cell.type = CELL_FREE;  // NON scoperto: fingi sia libera!
+                        cell.type = CELL_FREE;  // non scoperto, fingo sia libera
                     }
-                    cell.owner_id = -1;  // I muri non hanno proprietario
+                    cell.owner_id = -1;  // i muri non hanno proprietario
                 } else {
-                    // È libera: mostra sempre
+                    // libera
                     cell.type = CELL_FREE;
                     cell.owner_id = game_map[i][j].owner_id;
                 }
@@ -391,17 +380,15 @@ void send_local_map(int client_fd, int player_id) {
         }
     }
     
-    // Invia: prima il header, poi le celle
+    // invio prima l'header, poi le celle
     send_message(client_fd, MSG_LOCAL_MAP, &local_msg, sizeof(LocalMapMsg));
     send_all(client_fd, cells, sizeof(Cell) * cell_count);
 }
 
-/* ===== LISTA GIOCATORI ===== */
+
 void handle_list_players(int client_fd) {
     PlayersListMsg list_msg;
     int i, count = 0;
-    
-    // Raccogli giocatori attivi
     for(i = 0; i < MAX_PLAYERS; i++) {
         if(players[i].is_playing) {
             PlayerInfo info;
@@ -417,16 +404,15 @@ void handle_list_players(int client_fd) {
     
     list_msg.count = count;
     
-    // Invia lista
+    // invia lista
     send_message(client_fd, MSG_PLAYERS_LIST, &list_msg, sizeof(PlayersListMsg));
 }
 
-/* ===== AGGIORNAMENTO GLOBALE (PERIODICO) ===== */
 void send_global_update() {
     GlobalMapMsg global_msg;
     int i, j, count = 0;
     
-    // Calcola tempo rimanente
+    // calcola tempo rimanente
     time_t now = time(NULL);
     int elapsed = now - game_start_time;
     global_msg.time_remaining = GAME_DURATION - elapsed;
@@ -435,7 +421,7 @@ void send_global_update() {
         global_msg.time_remaining = 0;
     }
     
-    // Raccogli info giocatori
+    // raccogli info giocatori
     for(i = 0; i < MAX_PLAYERS; i++) {
         if(players[i].is_playing) {
             PlayerInfo info;
@@ -454,14 +440,14 @@ void send_global_update() {
     
     global_msg.num_players = count;
     
-    // Copia ownership map (solo proprietà, non muri)
+    // copia ownership map (solo proprietà, non muri)
     for(i = 0; i < MAP_SIZE; i++) {
         for(j = 0; j < MAP_SIZE; j++) {
             global_msg.ownership[i][j] = game_map[i][j].owner_id;
         }
     }
     
-    // Invia a tutti i giocatori attivi
+    // invia a tutti i giocatori attivi
     for(i = 0; i < MAX_PLAYERS; i++) {
         if(players[i].is_playing) {
             send_message(players[i].socket_fd, MSG_GLOBAL_MAP, 
@@ -470,19 +456,18 @@ void send_global_update() {
     }
 }
 
-/* ===== CONTROLLO FINE PARTITA ===== */
 void check_game_end() {
     time_t now = time(NULL);
     int elapsed = now - game_start_time;
     
     if(elapsed >= GAME_DURATION) {
-        // Tempo scaduto! Fine partita
+        // tempo scaduto
         GameOverMsg game_over;
         int i, count = 0;
         int max_score = -1;
         int winner_id = -1;
         
-        // Trova vincitore e prepara classifica
+        // trova vincitore e prepara classifica
         for(i = 0; i < MAX_PLAYERS; i++) {
             if(players[i].is_playing) {
                 int score = map_count_cells_owned(game_map, i);
@@ -515,7 +500,7 @@ void check_game_end() {
             game_over.winner_score = 0;
         }
         
-        // Invia game over a tutti
+        // invia game over a tutti
         for(i = 0; i < MAX_PLAYERS; i++) {
             if(players[i].is_playing) {
                 send_message(players[i].socket_fd, MSG_GAME_OVER, 
@@ -525,7 +510,7 @@ void check_game_end() {
         
         
         
-        // Resetta gioco
+        // resetta gioco
         game_started = 0;
         players_init(players);
         map_init(game_map, 20);
