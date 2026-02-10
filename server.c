@@ -43,13 +43,10 @@ int main(int argc, char* argv[]) {
     // inizializza random seed
     srand(time(NULL));
     
-    // inizializza mappa
     map_init(game_map, 20); // 20% muri
     
-    // Inizializza giocatori
     players_init(players);
     
-    // crea socket in ascolto
     listen_fd = create_listening_socket(port);
     if(listen_fd < 0) {
         char *msg = "Errore creazione socket\n";
@@ -64,7 +61,6 @@ int main(int argc, char* argv[]) {
     
 
     
-
     while(1) {
         read_set = master_set;
         
@@ -81,15 +77,12 @@ int main(int argc, char* argv[]) {
             break;
         }
         
-        // controlla tutti i socket
         int i;
         for(i = 0; i <= max_fd; i++) {
             if(FD_ISSET(i, &read_set)) {
                 if(i == listen_fd) {
-                    // nuova connessione
                     handle_new_connection(listen_fd, &master_set, &max_fd);
                 } else {
-                    // messaggio da client
                     handle_client_message(i, &master_set);
                 }
             }
@@ -104,7 +97,7 @@ int main(int argc, char* argv[]) {
                 send_global_update();
                 last_update_time = now;
             }
-        
+            
             check_game_end();
         }
     }
@@ -118,7 +111,6 @@ int create_listening_socket(int port) {
     struct sockaddr_in addr;
     int opt = 1;
     
-    // crea socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0) {
         return -1;
@@ -155,11 +147,11 @@ void handle_new_connection(int listen_fd, fd_set* master_set, int* max_fd) {
     new_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &addr_len);
     
     if(new_fd < 0) {
-        return; // errore accept, ignora
+        return; 
     }
-  
+    
     FD_SET(new_fd, master_set);
-
+    
     if(new_fd > *max_fd) {
         *max_fd = new_fd;
     }
@@ -186,7 +178,6 @@ void handle_client_message(int client_fd, fd_set* master_set) {
         return;
     }
     
-    // gestisci in base al tipo di messaggio
     switch(msg_type) {
         case MSG_REGISTER:
             handle_register(client_fd, (AuthMsg*)buffer);
@@ -216,7 +207,7 @@ void handle_client_message(int client_fd, fd_set* master_set) {
             }
             break;
             
-        default: { // le parentesi graffe sono per limitare la scope di err_buff
+        default: { 
             char err_buff[64];
             int n = sprintf(err_buff, "Messaggio sconosciuto: %d\n", msg_type);
             write(2, err_buff, n);
@@ -230,7 +221,6 @@ void handle_register(int client_fd, AuthMsg* auth) {
     int result = player_register(auth->nickname, auth->password);
     
     if(result == 0) {
-        // registrazione OK
         send_simple_message(client_fd, MSG_OK);
     } else {
         // nickname già esistente o errore
@@ -257,11 +247,9 @@ void handle_login(int client_fd, AuthMsg* auth) {
     // trova posizione iniziale casuale
     Position start_pos = map_find_random_free_position(game_map);
     
-    // lo aggiungo in partita
     int player_id = players_add(players, auth->nickname, client_fd, start_pos);
     
     if(player_id < 0) {
-        // partita piena
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
@@ -273,10 +261,8 @@ void handle_login(int client_fd, AuthMsg* auth) {
     map_reveal_walls(game_map, players[player_id].walls_discovered, 
                      start_pos.x, start_pos.y);
     
-    // invia OK
     send_simple_message(client_fd, MSG_OK);
     
-    // invia mappa locale
     send_local_map(client_fd, player_id);
     
     // avvia gioco se è il primo giocatore
@@ -298,7 +284,6 @@ void handle_move(int client_fd, MoveMsg* move) {
         return;
     }
     
-    // calcola nuova posizione
     Position old_pos = players[player_id].pos;
     Position new_pos = old_pos;
     
@@ -312,16 +297,13 @@ void handle_move(int client_fd, MoveMsg* move) {
             return;
     }
     
-    // verifica che la nuova posizione sia valida e libera
     if(!map_is_free(game_map, new_pos.x, new_pos.y)) {
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
     
-    // aggiorna posizione giocatore
     players[player_id].pos = new_pos;
     
-    // conquista la nuova cella
     map_set_owner(game_map, new_pos.x, new_pos.y, player_id);
     
     // rivela muri attorno alla nuova posizione
@@ -332,7 +314,6 @@ void handle_move(int client_fd, MoveMsg* move) {
     int score = map_count_cells_owned(game_map, player_id);
     players_update_score(players, player_id, score);
     
-    // invia OK e mappa locale aggiornata
     send_simple_message(client_fd, MSG_OK);
     send_local_map(client_fd, player_id);
 }
@@ -447,7 +428,6 @@ void send_global_update() {
         }
     }
     
-    // invia a tutti i giocatori attivi
     for(i = 0; i < MAX_PLAYERS; i++) {
         if(players[i].is_playing) {
             send_message(players[i].socket_fd, MSG_GLOBAL_MAP, 
@@ -461,7 +441,8 @@ void check_game_end() {
     int elapsed = now - game_start_time;
     
     if(elapsed >= GAME_DURATION) {
-        // tempo scaduto
+        // Tempo scaduto
+
         GameOverMsg game_over;
         int i, count = 0;
         int max_score = -1;
@@ -490,6 +471,18 @@ void check_game_end() {
         
         game_over.num_players = count;
         
+        // ORDINA la classifica in ordine decrescente per cells_owned
+        int j, k;
+        for(j = 0; j < count - 1; j++) {
+            for(k = j + 1; k < count; k++) {
+                if(game_over.final_ranking[k].cells_owned > game_over.final_ranking[j].cells_owned) {
+                    PlayerInfo temp = game_over.final_ranking[j];
+                    game_over.final_ranking[j] = game_over.final_ranking[k];
+                    game_over.final_ranking[k] = temp;
+                }
+            }
+        }
+        
         if(winner_id >= 0) {
             game_over.winner_id = winner_id;
             strcpy(game_over.winner_name, players[winner_id].nickname);
@@ -508,9 +501,7 @@ void check_game_end() {
             }
         }
         
-        
-        
-        // resetta gioco
+        // Resetta gioco
         game_started = 0;
         players_init(players);
         map_init(game_map, 20);

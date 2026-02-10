@@ -62,15 +62,10 @@ int player_register(const char* nickname, const char* password) {
     char buffer[256];
     int len;
 
-    // controlla se esiste già
     if(player_exists(nickname)) {
         return -1; // nickname già usato
     }
     
-    //reminder
-    // O_WRONLY: scrittura
-    // O_CREAT: crea se non esiste
-    // O_APPEND: scrivi alla fine del file
     // 0644: permessi rw-r--r--
     fd = open(USERS_FILE, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if(fd < 0) {
@@ -99,9 +94,9 @@ int player_authenticate(const char* nickname, const char* password) {
     
     // leggi ogni riga
     while(read_line(fd, line, sizeof(line)) > 0) {
-        // estrai nickname 
+        // estrae nickname 
         nick = strtok(line, ":");
-        // estrai password 
+        // estrae password 
         pass = strtok(NULL, ":\n");
         
         if(nick != NULL && strcmp(nick, nickname) == 0) {
@@ -120,7 +115,6 @@ int player_authenticate(const char* nickname, const char* password) {
 }
 
 
-/* inizializza array giocatori */
 void players_init(Player players[MAX_PLAYERS]) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {
@@ -133,7 +127,6 @@ void players_init(Player players[MAX_PLAYERS]) {
     }
 }
 
-/* trova slot libero */
 int players_find_free_slot(Player players[MAX_PLAYERS]) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {
@@ -144,7 +137,6 @@ int players_find_free_slot(Player players[MAX_PLAYERS]) {
     return -1; // pieno
 }
 
-/* trova giocatore per socket */
 int players_find_by_socket(Player players[MAX_PLAYERS], int socket_fd) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {
@@ -172,10 +164,9 @@ int players_add(Player players[MAX_PLAYERS], const char* nickname,
     int slot = players_find_free_slot(players);
     
     if(slot == -1) {
-        return -1; // nessuno slot libero
+        return -1; 
     }
     
-    // inizializza giocatore
     players[slot].id = slot;
     strcpy(players[slot].nickname, nickname);
     players[slot].socket_fd = socket_fd;
@@ -200,14 +191,12 @@ int players_remove(Player players[MAX_PLAYERS], int player_id) {
     return 0;
 }
 
-/* aggiorna punteggio */
 void players_update_score(Player players[MAX_PLAYERS], int player_id, int score) {
     if(player_id >= 0 && player_id < MAX_PLAYERS) {
         players[player_id].cells_owned = score;
     }
 }
 
-/* conta giocatori attivi */
 int players_count_active(Player players[MAX_PLAYERS]) {
     int count = 0;
     int i;
