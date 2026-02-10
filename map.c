@@ -4,14 +4,14 @@
 #include <time.h>
 #include <string.h>
 
-/* Inizializza la mappa con muri casuali */
+/* inizializza la mappa con muri casuali */
 void map_init(Cell map[MAP_SIZE][MAP_SIZE], int wall_percentage) {
     int i, j;
     
     // seed inizializzato nel main
 
     
-    // Inizializza tutte le celle come libere senza proprietario
+    // inizializza tutte le celle come libere senza proprietario
     for(i = 0; i < MAP_SIZE; i++) {
         for(j = 0; j < MAP_SIZE; j++) {
             map[i][j].type = CELL_FREE;
@@ -19,10 +19,10 @@ void map_init(Cell map[MAP_SIZE][MAP_SIZE], int wall_percentage) {
         }
     }
     
-    // Aggiungi muri casuali
+    // aggiungi muri casuali
     for(i = 0; i < MAP_SIZE; i++) {
         for(j = 0; j < MAP_SIZE; j++) {
-            // Genera numero casuale 0-99
+            // genera numero casuale 0-99
             int random = rand() % 100;
             
             if(random < wall_percentage) {
@@ -32,9 +32,9 @@ void map_init(Cell map[MAP_SIZE][MAP_SIZE], int wall_percentage) {
     }
 }
 
-/* Verifica se una posizione è valida e libera */
+/* verifica se una posizione è valida e libera */
 int map_is_free(Cell map[MAP_SIZE][MAP_SIZE], int x, int y) {
-    // Controlla se è dentro la mappa
+    // controlla se è dentro la mappa
     if(x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
         return 0;
     }
@@ -47,9 +47,9 @@ int map_is_free(Cell map[MAP_SIZE][MAP_SIZE], int x, int y) {
     return 1;
 }
 
-/* Imposta il proprietario di una cella */
+/* imposta il proprietario di una cella */
 int map_set_owner(Cell map[MAP_SIZE][MAP_SIZE], int x, int y, int owner_id) {
-    // Verifica che la posizione sia valida e libera
+    // verifica che la posizione sia valida e libera
     if(!map_is_free(map, x, y)) {
         return -1;
     }
@@ -58,7 +58,7 @@ int map_set_owner(Cell map[MAP_SIZE][MAP_SIZE], int x, int y, int owner_id) {
     return 0;
 }
 
-/* Ottiene il proprietario di una cella */
+
 int map_get_owner(Cell map[MAP_SIZE][MAP_SIZE], int x, int y) {
     if(x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
         return -1;
@@ -67,7 +67,7 @@ int map_get_owner(Cell map[MAP_SIZE][MAP_SIZE], int x, int y) {
     return map[x][y].owner_id;
 }
 
-/* Trova una posizione libera casuale */
+/* trova una posizione libera casuale */
 Position map_find_random_free_position(Cell map[MAP_SIZE][MAP_SIZE]) {
     Position pos;
     int attempts = 0;
@@ -78,9 +78,8 @@ Position map_find_random_free_position(Cell map[MAP_SIZE][MAP_SIZE]) {
         pos.y = rand() % MAP_SIZE;
         attempts++;
         
-        // Evita loop infinito se la mappa è piena di muri
+        // evita loop infinito se la mappa è piena di muri
         if(attempts > max_attempts) {
-            // Cerca linearmente
             int i, j;
             for(i = 0; i < MAP_SIZE; i++) {
                 for(j = 0; j < MAP_SIZE; j++) {
@@ -97,7 +96,7 @@ Position map_find_random_free_position(Cell map[MAP_SIZE][MAP_SIZE]) {
     return pos;
 }
 
-/* Calcola quante celle possiede un giocatore */
+/* calcola quante celle possiede un giocatore */
 int map_count_cells_owned(Cell map[MAP_SIZE][MAP_SIZE], int player_id) {
     int count = 0;
     int i, j;
@@ -113,21 +112,21 @@ int map_count_cells_owned(Cell map[MAP_SIZE][MAP_SIZE], int player_id) {
     return count;
 }
 
-/* Rivela i muri attorno a una posizione */
+/* rivela i muri attorno a una posizione */
 void map_reveal_walls(Cell map[MAP_SIZE][MAP_SIZE], 
                       int walls_discovered[MAP_SIZE][MAP_SIZE],
                       int x, int y) {
     int i, j;
     
-    // Scansiona tutte le celle nel raggio VIEW_RADIUS
+    // scansiona tutte le celle nel raggio VIEW_RADIUS
     for(i = x - VIEW_RADIUS; i <= x + VIEW_RADIUS; i++) {
         for(j = y - VIEW_RADIUS; j <= y + VIEW_RADIUS; j++) {
-            // Salta celle fuori mappa
+            // salta celle fuori mappa
             if(i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
                 continue;
             }
             
-            // Se è un muro, marcalo come scoperto
+            // se è un muro, marcalo come scoperto
             if(map[i][j].type == CELL_WALL) {
                 walls_discovered[i][j] = 1;
             }
@@ -135,7 +134,7 @@ void map_reveal_walls(Cell map[MAP_SIZE][MAP_SIZE],
     }
 }
 
-/* Stampa la mappa (per debug) */
+/* Stampa la mappa */
 void map_print(Cell map[MAP_SIZE][MAP_SIZE]) {
     int i, j;
     

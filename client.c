@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-/* ===== CONNESSIONE AL SERVER ===== */
+
 int connect_to_server(const char* host, int port) {
     struct addrinfo hints, *res;
     char port_str[16];
@@ -147,7 +147,7 @@ int connect_to_server(const char* host, int port) {
     return sockfd;
 }
 
-/* ===== REGISTRAZIONE ===== */
+
 void do_register(int sockfd) {
     AuthMsg auth;
     int msg_type;
@@ -155,7 +155,7 @@ void do_register(int sockfd) {
     
     printf("\n=== REGISTRAZIONE ===\n");
     printf("Nickname: ");
-    fflush(stdout); // Assicura che la scritta appaia prima della read
+    fflush(stdout); 
     
     read_line(STDIN_FILENO, auth.nickname, MAX_NICKNAME);
     auth.nickname[strcspn(auth.nickname, "\n")] = 0; 
@@ -166,10 +166,9 @@ void do_register(int sockfd) {
     read_line(STDIN_FILENO, auth.password, MAX_PASSWORD);
     auth.password[strcspn(auth.password, "\n")] = 0;
     
-    // Invia richiesta registrazione
+    // invia richiesta registrazione
     send_message(sockfd, MSG_REGISTER, &auth, sizeof(AuthMsg));
     
-    // Ricevi risposta
     recv_message(sockfd, &msg_type, buffer, sizeof(buffer));
     
     if(msg_type == MSG_OK) {
@@ -199,24 +198,24 @@ void do_login(int sockfd) {
     read_line(STDIN_FILENO, auth.password, MAX_PASSWORD);
     auth.password[strcspn(auth.password, "\n")] = 0;
     
-    // Invia richiesta login
+    // invia richiesta login
     send_message(sockfd, MSG_LOGIN, &auth, sizeof(AuthMsg));
     
-    // Ricevi risposta
+    
     len = recv_message(sockfd, &msg_type, buffer, sizeof(buffer));
     
     if(msg_type == MSG_OK) {
         printf("Login effettuato!\n");
         game_active = 1;
         
-        // Ricevi mappa locale iniziale
+        // ricevi mappa locale iniziale
         len = recv_message(sockfd, &msg_type, buffer, sizeof(buffer));
         if(msg_type == MSG_LOCAL_MAP) {
             LocalMapMsg* local = (LocalMapMsg*)buffer;
             my_x = local->your_x;
             my_y = local->your_y;
             
-            // Ricevi celle
+            // ricevi celle
             Cell cells[local->view_size * local->view_size];
             recv_all(sockfd, cells, sizeof(Cell) * local->view_size * local->view_size);
             
@@ -240,7 +239,7 @@ void do_login(int sockfd) {
     }
 }
 
-/* ===== GAME LOOP ===== */
+
 void game_loop(int sockfd) {
     fd_set read_set;
     struct timeval timeout;
@@ -266,7 +265,7 @@ void game_loop(int sockfd) {
             break;
         }
         
-        // Input da tastiera
+
         if(FD_ISSET(STDIN_FILENO, &read_set)) {
             int n = read(STDIN_FILENO, &cmd, 1);
             
@@ -302,12 +301,12 @@ void game_loop(int sockfd) {
             }
         }
         
-        // Messaggi dal server
+        // messaggi dal server
         if(FD_ISSET(sockfd, &read_set)) {
-            // C'è davvero qualcosa da leggere
+            // c'è davvero qualcosa da leggere
             handle_server_message(sockfd);
             
-            // Se la connessione è stata chiusa, esci
+            // se la connessione è stata chiusa, esci
             if(!game_active) {
                 running = 0;
             }
@@ -318,7 +317,7 @@ void game_loop(int sockfd) {
     game_active = 0;
 }
 
-/* ===== GESTIONE MESSAGGI SERVER ===== */
+
 void handle_server_message(int sockfd) {
     int msg_type;
     char buffer[100000];
@@ -327,9 +326,8 @@ void handle_server_message(int sockfd) {
     len = recv_message(sockfd, &msg_type, buffer, sizeof(buffer));
     
     if(len < 0) {
-        // Errore di lettura
         if(errno == EAGAIN || errno == EWOULDBLOCK) {
-            // Nessun dato disponibile (non è un errore grave)
+            // nessun dato disponibile (non è un errore grave)
             return;
         }
         printf("Errore di connessione.\n");
@@ -338,7 +336,7 @@ void handle_server_message(int sockfd) {
     }
     
     if(len == 0 && msg_type == 0) {
-        // Connessione chiusa dal server
+        // connessione chiusa dal server
         printf("Server disconnesso.\n");
         game_active = 0;
         return;
@@ -346,18 +344,16 @@ void handle_server_message(int sockfd) {
     
     switch(msg_type) {
         case MSG_OK:
-            // Movimento accettato, ricevi mappa locale
+            // movimento accettato, ricevo mappa locale
             len = recv_message(sockfd, &msg_type, buffer, sizeof(buffer));
             if(msg_type == MSG_LOCAL_MAP) {
                 LocalMapMsg* local = (LocalMapMsg*)buffer;
                 my_x = local->your_x;
                 my_y = local->your_y;
-                
-                // Ricevi celle
                 Cell cells[local->view_size * local->view_size];
                 recv_all(sockfd, cells, sizeof(Cell) * local->view_size * local->view_size);
                 
-                // Aggiorna mappa locale
+                // aggiorna mappa locale
                 int idx = 0;
                 int i, j;
                 for(i = my_x - VIEW_RADIUS; i <= my_x + VIEW_RADIUS; i++) {
@@ -406,7 +402,7 @@ void handle_server_message(int sockfd) {
                 GameOverMsg* game_over = (GameOverMsg*)buffer;
                 int i;
                 
-                // Pulisce un po' lo schermo per dare enfasi
+                // pulisce un po' lo schermo
                 printf("\n\n");
                 printf("**********************************\n");
                 printf("* PARTITA TERMINATA        *\n");
@@ -435,32 +431,31 @@ void handle_server_message(int sockfd) {
     }
 }
 
-/* ===== VISUALIZZAZIONE MAPPA LOCALE ===== */
+
 void display_local_map() {
     int i, j;
     int start_x = my_x - VIEW_RADIUS;
-    int start_y = my_y + VIEW_RADIUS; // Sistema cartesiano
+    int start_y = my_y + VIEW_RADIUS; 
     int end_x = my_x + VIEW_RADIUS;
     int end_y = my_y - VIEW_RADIUS;
     
     printf("\n=== MAPPA LOCALE ===\n");
     
-    // Stampa dall'alto verso il basso (sistema cartesiano)
+
     for(j = start_y; j >= end_y; j--) {
         for(i = start_x; i <= end_x; i++) {
             if(i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
                 printf(" ?");  // Fuori mappa
                 continue;
             }
-            
             if(i == my_x && j == my_y) {
-                printf(" X");  // Tu sei qui
+                printf(" X");  
             } else if(local_map[i][j].type == CELL_WALL) {
-                printf(" #");  // Muro
+                printf(" #");  // muro
             } else if(local_map[i][j].owner_id >= 0) {
-                printf(" %d", local_map[i][j].owner_id);  // Proprietario
+                printf(" %d", local_map[i][j].owner_id);  
             } else {
-                printf(" .");  // Libera
+                printf(" .");  // libera
             }
         }
         printf("\n");
@@ -468,7 +463,6 @@ void display_local_map() {
     printf("\n");
 }
 
-/* ===== VISUALIZZAZIONE MAPPA GLOBALE ===== */
 void display_global_map(GlobalMapMsg* global) {
     int i, j;
     
@@ -476,7 +470,7 @@ void display_global_map(GlobalMapMsg* global) {
     printf("Tempo rimanente: %d secondi\n", global->time_remaining);
     printf("Giocatori attivi: %d\n\n", global->num_players);
     
-    // Mostra info giocatori
+    // mostra info giocatori
     for(i = 0; i < global->num_players; i++) {
         printf("[%d] %s - Pos: (%d,%d) - Celle: %d\n",
                global->players[i].id,
@@ -488,10 +482,10 @@ void display_global_map(GlobalMapMsg* global) {
     
     printf("\n=== MAPPA PROPRIETÀ ===\n");
     
-    // Stampa mappa ownership (sistema cartesiano: dall'alto verso il basso)
+    // stampa mappa ownership 
     for(j = MAP_SIZE - 1; j >= 0; j--) {
         for(i = 0; i < MAP_SIZE; i++) {
-            // Controlla se c'è un giocatore qui
+            // controlla se c'è un giocatore qui
             int player_here = -1;
             int k;
             for(k = 0; k < global->num_players; k++) {
@@ -502,11 +496,11 @@ void display_global_map(GlobalMapMsg* global) {
             }
             
             if(player_here >= 0) {
-                printf(" X");  // Giocatore presente
+                printf(" X");  // giocatore presente
             } else if(global->ownership[i][j] >= 0) {
-                printf(" %d", global->ownership[i][j]);  // Proprietario
+                printf(" %d", global->ownership[i][j]);  // proprietario
             } else {
-                printf(" .");  // Nessun proprietario
+                printf(" .");  // nessun proprietario
             }
         }
         printf("\n");

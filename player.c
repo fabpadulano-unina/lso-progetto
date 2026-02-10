@@ -5,8 +5,7 @@
 #include <unistd.h> 
 #include <fcntl.h> 
 
-/* Legge dal file descriptor fd finché non trova \n o finisce il buffer.
-   Restituisce il numero di byte letti. */
+/* legge dal file descriptor fd finché non trova \n o finisce il buffer e restituisce il numero di byte letti */
 ssize_t read_line(int fd, char *buffer, size_t n) {
     ssize_t num_read;
     size_t tot_read = 0;
@@ -31,9 +30,7 @@ ssize_t read_line(int fd, char *buffer, size_t n) {
     return tot_read;
 }
 
-/* ===== FUNZIONI FILE UTENTI ===== */
-
-/* Controlla se un nickname esiste nel file */
+/* controlla se un nickname esiste nel file */
 int player_exists(const char* nickname) {
     int fd; 
     char line[128];
@@ -41,42 +38,43 @@ int player_exists(const char* nickname) {
     
     fd = open(USERS_FILE, O_RDONLY);
     if(fd < 0) {
-        return 0; // File non esiste o errore, nessun utente
+        return 0; // file non esiste o errore, nessun utente
     }
     
     // read_line restituisce 0 se è EOF
     while(read_line(fd, line, sizeof(line)) > 0) {
-        // Estrai il nickname (tutto prima dei ':')
+        // estrai il nickname (tutto prima dei ':')
         nick = strtok(line, ":");
         
         if(nick != NULL && strcmp(nick, nickname) == 0) {
             close(fd);
-            return 1; // Trovato!
+            return 1; //trovato
         }
     }
     
     close(fd);
-    return 0; // Non trovato
+    return 0; // non trovato
 }
 
-/* Registra un nuovo utente */
+/* registra un nuovo utente */
 int player_register(const char* nickname, const char* password) {
     int fd;
     char buffer[256];
     int len;
 
-    // Controlla se esiste già
+    // controlla se esiste già
     if(player_exists(nickname)) {
-        return -1; // Nickname già usato
+        return -1; // nickname già usato
     }
     
-    // O_WRONLY: Scrittura
-    // O_CREAT: Crea se non esiste
-    // O_APPEND: Scrivi alla fine del file
-    // 0644: Permessi rw-r--r--
+    //reminder
+    // O_WRONLY: scrittura
+    // O_CREAT: crea se non esiste
+    // O_APPEND: scrivi alla fine del file
+    // 0644: permessi rw-r--r--
     fd = open(USERS_FILE, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if(fd < 0) {
-        return -2; // Errore apertura file
+        return -2; // errore apertura file
     }
     
     len = sprintf(buffer, "%s:%s\n", nickname, password);
@@ -85,10 +83,9 @@ int player_register(const char* nickname, const char* password) {
     
     close(fd);
     
-    return 0; // OK
+    return 0; 
 }
 
-/* Autentica un utente */
 int player_authenticate(const char* nickname, const char* password) {
     int fd;
     char line[128];
@@ -97,36 +94,33 @@ int player_authenticate(const char* nickname, const char* password) {
     
     fd = open(USERS_FILE, O_RDONLY);
     if(fd < 0) {
-        return 0; // File non esiste, nessun utente
+        return 0; // file non esiste, nessun utente
     }
     
-    // Leggi ogni riga
+    // leggi ogni riga
     while(read_line(fd, line, sizeof(line)) > 0) {
-        // Estrai nickname (prima parte)
+        // estrai nickname 
         nick = strtok(line, ":");
-        // Estrai password (seconda parte)
+        // estrai password 
         pass = strtok(NULL, ":\n");
         
-        // Controlla se il nickname corrisponde
         if(nick != NULL && strcmp(nick, nickname) == 0) {
             close(fd);
-            
-            // Controlla password
+
             if(pass != NULL && strcmp(pass, password) == 0) {
-                return 1; // OK: credenziali corrette
+                return 1; // credenziali corrette
             } else {
-                return 0; // Password errata
+                return 0; // password errata
             }
         }
     }
     
     close(fd);
-    return 0; // Nickname non trovato
+    return 0; // nickname non trovato
 }
 
-/* ===== FUNZIONI GESTIONE GIOCATORI IN PARTITA ===== */
 
-/* Inizializza array giocatori */
+/* inizializza array giocatori */
 void players_init(Player players[MAX_PLAYERS]) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {
@@ -139,7 +133,7 @@ void players_init(Player players[MAX_PLAYERS]) {
     }
 }
 
-/* Trova slot libero */
+/* trova slot libero */
 int players_find_free_slot(Player players[MAX_PLAYERS]) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {
@@ -147,10 +141,10 @@ int players_find_free_slot(Player players[MAX_PLAYERS]) {
             return i;
         }
     }
-    return -1; // Pieno
+    return -1; // pieno
 }
 
-/* Trova giocatore per socket */
+/* trova giocatore per socket */
 int players_find_by_socket(Player players[MAX_PLAYERS], int socket_fd) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {
@@ -161,7 +155,7 @@ int players_find_by_socket(Player players[MAX_PLAYERS], int socket_fd) {
     return -1;
 }
 
-/* Trova giocatore per nickname */
+
 int players_find_by_nickname(Player players[MAX_PLAYERS], const char* nickname) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {
@@ -172,28 +166,28 @@ int players_find_by_nickname(Player players[MAX_PLAYERS], const char* nickname) 
     return -1;
 }
 
-/* Aggiunge un giocatore */
+
 int players_add(Player players[MAX_PLAYERS], const char* nickname, 
                 int socket_fd, Position start_pos) {
     int slot = players_find_free_slot(players);
     
     if(slot == -1) {
-        return -1; // Nessuno slot libero
+        return -1; // nessuno slot libero
     }
     
-    // Inizializza giocatore
+    // inizializza giocatore
     players[slot].id = slot;
     strcpy(players[slot].nickname, nickname);
     players[slot].socket_fd = socket_fd;
     players[slot].pos = start_pos;
-    players[slot].cells_owned = 1; // Parte con 1 cella (la sua posizione)
+    players[slot].cells_owned = 1; // parte con 1 cella (la sua posizione)
     players[slot].is_playing = 1;
     memset(players[slot].walls_discovered, 0, sizeof(players[slot].walls_discovered));
     
     return slot;
 }
 
-/* Rimuove un giocatore */
+
 int players_remove(Player players[MAX_PLAYERS], int player_id) {
     if(player_id < 0 || player_id >= MAX_PLAYERS) {
         return -1;
@@ -206,14 +200,14 @@ int players_remove(Player players[MAX_PLAYERS], int player_id) {
     return 0;
 }
 
-/* Aggiorna punteggio */
+/* aggiorna punteggio */
 void players_update_score(Player players[MAX_PLAYERS], int player_id, int score) {
     if(player_id >= 0 && player_id < MAX_PLAYERS) {
         players[player_id].cells_owned = score;
     }
 }
 
-/* Conta giocatori attivi */
+/* conta giocatori attivi */
 int players_count_active(Player players[MAX_PLAYERS]) {
     int count = 0;
     int i;
