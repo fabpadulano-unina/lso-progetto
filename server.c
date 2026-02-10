@@ -43,13 +43,10 @@ int main(int argc, char* argv[]) {
     // Inizializza random seed
     srand(time(NULL));
     
-    // Inizializza mappa
     map_init(game_map, 20); // 20% muri
     
-    // Inizializza giocatori
     players_init(players);
     
-    // Crea socket in ascolto
     listen_fd = create_listening_socket(port);
     if(listen_fd < 0) {
         char *msg = "Errore creazione socket\n";
@@ -64,7 +61,6 @@ int main(int argc, char* argv[]) {
     
 
     
-    // Loop principale
     while(1) {
         read_set = master_set;
         
@@ -81,15 +77,12 @@ int main(int argc, char* argv[]) {
             break;
         }
         
-        // Controlla tutti i socket
         int i;
         for(i = 0; i <= max_fd; i++) {
             if(FD_ISSET(i, &read_set)) {
                 if(i == listen_fd) {
-                    // Nuova connessione
                     handle_new_connection(listen_fd, &master_set, &max_fd);
                 } else {
-                    // Messaggio da client
                     handle_client_message(i, &master_set);
                 }
             }
@@ -105,7 +98,6 @@ int main(int argc, char* argv[]) {
                 last_update_time = now;
             }
             
-            // Controlla fine partita
             check_game_end();
         }
     }
@@ -114,37 +106,31 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-/* ===== CREAZIONE SOCKET ===== */
 int create_listening_socket(int port) {
     int sockfd;
     struct sockaddr_in addr;
     int opt = 1;
     
-    // Crea socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0) {
         return -1;
     }
     
-    // Opzioni socket
     if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         close(sockfd);
         return -1;
     }
     
-    // Configura indirizzo
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
     
-    // Bind
     if(bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         close(sockfd);
         return -1;
     }
     
-    // Listen
     if(listen(sockfd, 1000) < 0) {
         close(sockfd);
         return -1;
@@ -159,17 +145,14 @@ void handle_new_connection(int listen_fd, fd_set* master_set, int* max_fd) {
     socklen_t addr_len = sizeof(client_addr);
     int new_fd;
     
-    // Accetta nuova connessione
     new_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &addr_len);
     
     if(new_fd < 0) {
-        return; // Errore accept, ignora
+        return; 
     }
     
-    // Aggiungi al master set
     FD_SET(new_fd, master_set);
     
-    // Aggiorna max_fd se necessario
     if(new_fd > *max_fd) {
         *max_fd = new_fd;
     }
@@ -196,7 +179,6 @@ void handle_client_message(int client_fd, fd_set* master_set) {
         return;
     }
     
-    // Gestisci in base al tipo di messaggio
     switch(msg_type) {
         case MSG_REGISTER:
             handle_register(client_fd, (AuthMsg*)buffer);
@@ -226,7 +208,7 @@ void handle_client_message(int client_fd, fd_set* master_set) {
             }
             break;
             
-        default: { // le parentesi graffe sono per limitare la scope di err_buff
+        default: { 
             char err_buff[64];
             int n = sprintf(err_buff, "Messaggio sconosciuto: %d\n", msg_type);
             write(2, err_buff, n);
@@ -240,7 +222,6 @@ void handle_register(int client_fd, AuthMsg* auth) {
     int result = player_register(auth->nickname, auth->password);
     
     if(result == 0) {
-        // Registrazione OK
         send_simple_message(client_fd, MSG_OK);
     } else {
         // Nickname già esistente o errore
@@ -267,11 +248,9 @@ void handle_login(int client_fd, AuthMsg* auth) {
     // Trova posizione iniziale casuale
     Position start_pos = map_find_random_free_position(game_map);
     
-    // Aggiungi giocatore
     int player_id = players_add(players, auth->nickname, client_fd, start_pos);
     
     if(player_id < 0) {
-        // Partita piena
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
@@ -283,10 +262,8 @@ void handle_login(int client_fd, AuthMsg* auth) {
     map_reveal_walls(game_map, players[player_id].walls_discovered, 
                      start_pos.x, start_pos.y);
     
-    // Invia OK
     send_simple_message(client_fd, MSG_OK);
     
-    // Invia mappa locale
     send_local_map(client_fd, player_id);
     
     // Avvia gioco se è il primo giocatore
@@ -308,13 +285,12 @@ void handle_move(int client_fd, MoveMsg* move) {
         return;
     }
     
-    // Calcola nuova posizione
     Position old_pos = players[player_id].pos;
     Position new_pos = old_pos;
     
     switch(move->direction) {
-        case DIR_UP:    new_pos.y++; break;  // y aumenta andando su
-        case DIR_DOWN:  new_pos.y--; break;  // y diminuisce andando giù
+        case DIR_UP:    new_pos.y++; break; 
+        case DIR_DOWN:  new_pos.y--; break;  
         case DIR_LEFT:  new_pos.x--; break;
         case DIR_RIGHT: new_pos.x++; break;
         default:
@@ -322,16 +298,13 @@ void handle_move(int client_fd, MoveMsg* move) {
             return;
     }
     
-    // Verifica che la nuova posizione sia valida e libera
     if(!map_is_free(game_map, new_pos.x, new_pos.y)) {
         send_simple_message(client_fd, MSG_ERROR);
         return;
     }
     
-    // Aggiorna posizione giocatore
     players[player_id].pos = new_pos;
     
-    // Conquista la nuova cella
     map_set_owner(game_map, new_pos.x, new_pos.y, player_id);
     
     // Rivela muri attorno alla nuova posizione
@@ -342,7 +315,6 @@ void handle_move(int client_fd, MoveMsg* move) {
     int score = map_count_cells_owned(game_map, player_id);
     players_update_score(players, player_id, score);
     
-    // Invia OK e mappa locale aggiornata
     send_simple_message(client_fd, MSG_OK);
     send_local_map(client_fd, player_id);
 }
