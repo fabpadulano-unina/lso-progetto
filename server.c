@@ -505,6 +505,19 @@ void check_game_end() {
         
         game_over.num_players = count;
         
+        // ORDINA la classifica in ordine decrescente per cells_owned
+        int j, k;
+        for(j = 0; j < count - 1; j++) {
+            for(k = j + 1; k < count; k++) {
+                if(game_over.final_ranking[k].cells_owned > game_over.final_ranking[j].cells_owned) {
+                    // Swap
+                    PlayerInfo temp = game_over.final_ranking[j];
+                    game_over.final_ranking[j] = game_over.final_ranking[k];
+                    game_over.final_ranking[k] = temp;
+                }
+            }
+        }
+        
         if(winner_id >= 0) {
             game_over.winner_id = winner_id;
             strcpy(game_over.winner_name, players[winner_id].nickname);
@@ -522,8 +535,6 @@ void check_game_end() {
                             &game_over, sizeof(GameOverMsg));
             }
         }
-        
-        
         
         // Resetta gioco
         game_started = 0;
