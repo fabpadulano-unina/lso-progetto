@@ -411,7 +411,7 @@ void send_global_update() {
             info.x = players[i].pos.x;
             info.y = players[i].pos.y;
             
-            // Ricalcola punteggio aggiornato
+            // ricalcola punteggio aggiornato
             info.cells_owned = map_count_cells_owned(game_map, i);
             players_update_score(players, i, info.cells_owned);
             
@@ -447,6 +447,7 @@ void check_game_end() {
         int i, count = 0;
         int max_score = -1;
         int winner_id = -1;
+        int tie = 0; // variabile per tracciare il pareggio
         
         // trova vincitore e prepara classifica
         for(i = 0; i < MAX_PLAYERS; i++) {
@@ -465,6 +466,9 @@ void check_game_end() {
                 if(score > max_score) {
                     max_score = score;
                     winner_id = i;
+                    tie = 0; // nuovo massimo trovato
+                } else if(score == max_score && max_score > 0) {
+                    tie = 1; // trovato un altro giocatore con lo stesso punteggio massimo
                 }
             }
         }
@@ -483,14 +487,16 @@ void check_game_end() {
             }
         }
         
-        if(winner_id >= 0) {
+
+        if(winner_id >= 0 && tie == 0) {
             game_over.winner_id = winner_id;
             strcpy(game_over.winner_name, players[winner_id].nickname);
             game_over.winner_score = max_score;
         } else {
+            // caso di pareggio o punteggio 0, nessun vincitore
             game_over.winner_id = -1;
             strcpy(game_over.winner_name, "Nessuno");
-            game_over.winner_score = 0;
+            game_over.winner_score = (max_score > 0) ? max_score : 0;
         }
         
         // invia game over a tutti
