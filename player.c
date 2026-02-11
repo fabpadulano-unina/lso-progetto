@@ -127,6 +127,7 @@ void players_init(Player players[MAX_PLAYERS]) {
     }
 }
 
+/* trova uno slot libero nell'array giocatori*/
 int players_find_free_slot(Player players[MAX_PLAYERS]) {
     int i;
     for(i = 0; i < MAX_PLAYERS; i++) {

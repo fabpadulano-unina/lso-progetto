@@ -25,7 +25,7 @@
 #define MSG_LIST_PLAYERS 4    
 #define MSG_QUIT 5             
 
-#define MSG_OK 10              // operazione riuscita
+#define MSG_OK 10             
 #define MSG_ERROR 11           
 #define MSG_LOCAL_MAP 12       
 #define MSG_GLOBAL_MAP 13      // aggiornamento globale periodico
@@ -80,7 +80,7 @@ typedef struct {
 /* mappa locale (inviata dopo ogni movimento) */
 typedef struct {
     int your_x, your_y;        
-    int view_size;             // Dimensione finestra (es. 7 se VIEW_RADIUS=3)
+    int view_size;             // dimensione finestra (ad esempio 7 se VIEW_RADIUS==3)
 } LocalMapMsg;
 
 

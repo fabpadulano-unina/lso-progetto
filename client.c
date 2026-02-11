@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     int server_port;
     int choice;
     
-    //vVerifica argomenti riga di comando
+    //verifica argomenti riga di comando
     if(argc != 3) {
         printf("Uso: %s <ip_server> <porta>\n", argv[0]);
         printf("Esempio: %s 127.0.0.1 8888\n", argv[0]);
@@ -83,10 +83,10 @@ int main(int argc, char* argv[]) {
         printf("Scelta: ");
         
         if(scanf("%d", &choice) != 1) {
-            while(getchar() != '\n'); // Pulisci buffer
+            while(getchar() != '\n'); // pulisci buffer
             continue;
         }
-        while(getchar() != '\n'); // Pulisci buffer
+        while(getchar() != '\n'); // pulisci buffer
         
         switch(choice) {
             case 1:
@@ -178,7 +178,7 @@ void do_register(int sockfd) {
     }
 }
 
-/* ===== LOGIN ===== */
+
 void do_login(int sockfd) {
     AuthMsg auth;
     int msg_type;
@@ -219,7 +219,7 @@ void do_login(int sockfd) {
             Cell cells[local->view_size * local->view_size];
             recv_all(sockfd, cells, sizeof(Cell) * local->view_size * local->view_size);
             
-            // Aggiorna mappa locale
+            // aggiorna mappa locale
             int idx = 0;
             int i, j;
             for(i = my_x - VIEW_RADIUS; i <= my_x + VIEW_RADIUS; i++) {
@@ -444,7 +444,7 @@ void display_local_map() {
     for(j = start_y; j >= end_y; j--) {
         for(i = start_x; i <= end_x; i++) {
             if(i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
-                printf(" ?");  // Fuori mappa
+                printf(" ?");  // fuori mappa
                 continue;
             }
             if(i == my_x && j == my_y) {

@@ -19,4 +19,4 @@ int recv_all(int sockfd, void* buffer, int n);
 /* invia esattamente n bytes su un socket */
 int send_all(int sockfd, void* buffer, int n);
 
-#endif /* PROTOCOL_H */
+#endif 

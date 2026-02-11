@@ -20,12 +20,10 @@ int map_get_owner(Cell map[MAP_SIZE][MAP_SIZE], int x, int y);
 /* trova una posizione libera casuale sulla mappa, utile per posizionare i giocatori all'inizio */
 Position map_find_random_free_position(Cell map[MAP_SIZE][MAP_SIZE]);
 
-/* Calcola quante celle possiede un giocatore
- * Ritorna: numero di celle possedute */
+/* calcola quante celle possiede un giocatore, ritorna il numero di celle possedute */
 int map_count_cells_owned(Cell map[MAP_SIZE][MAP_SIZE], int player_id);
 
-/* rivela i muri attorno a una posizione nel raggio VIEW_RADIUS
- * aggiorna l'array walls_discovered del giocatore */
+/* rivela i muri attorno a una posizione nel raggio VIEW_RADIUS, aggiorna l'array walls_discovered del giocatore */
 void map_reveal_walls(Cell map[MAP_SIZE][MAP_SIZE], 
                       int walls_discovered[MAP_SIZE][MAP_SIZE],
                       int x, int y);
@@ -33,4 +31,4 @@ void map_reveal_walls(Cell map[MAP_SIZE][MAP_SIZE],
 /* stampa la mappa */
 void map_print(Cell map[MAP_SIZE][MAP_SIZE]);
 
-#endif /* MAP_H */
+#endif 

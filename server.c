@@ -441,7 +441,7 @@ void check_game_end() {
     int elapsed = now - game_start_time;
     
     if(elapsed >= GAME_DURATION) {
-        // Tempo scaduto
+        // tempo scaduto
 
         GameOverMsg game_over;
         int i, count = 0;
@@ -501,7 +501,7 @@ void check_game_end() {
             }
         }
         
-        // Resetta gioco
+        // resetta gioco
         game_started = 0;
         players_init(players);
         map_init(game_map, 20);

@@ -134,7 +134,7 @@ void map_reveal_walls(Cell map[MAP_SIZE][MAP_SIZE],
     }
 }
 
-/* Stampa la mappa */
+/* stampa la mappa */
 void map_print(Cell map[MAP_SIZE][MAP_SIZE]) {
     int i, j;
     

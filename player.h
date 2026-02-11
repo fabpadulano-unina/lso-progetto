@@ -18,13 +18,13 @@ int player_exists(const char* nickname);
 /* inizializza l'array di giocatori */
 void players_init(Player players[MAX_PLAYERS]);
 
-/* trova uno slot libero nell'array giocatori, ritorna l'indice dello slot, -1 se pieno */
+/* trova uno slot libero nell'array giocatori*/
 int players_find_free_slot(Player players[MAX_PLAYERS]);
 
-/* trova un giocatore per socket, ritorna l'indice del giocatore, -1 se non trovato */
+/* trova un giocatore per socket, ritorna l'indice del giocatore*/
 int players_find_by_socket(Player players[MAX_PLAYERS], int socket_fd);
 
-/* trova un giocatore per nickname, ritorna l'indice del giocatore, -1 se non trovato */
+/* trova un giocatore per nickname, ritorna l'indice del giocatore*/
 int players_find_by_nickname(Player players[MAX_PLAYERS], const char* nickname);
 
 /* aggiunge un giocatore alla partita, ritorna l'ID del giocatore (indice), -1 se errore */
